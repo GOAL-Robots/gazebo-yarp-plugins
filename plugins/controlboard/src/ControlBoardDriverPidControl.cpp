@@ -8,8 +8,8 @@
 
 #include "ControlBoardDriver.h"
 #include <GazeboYarpPlugins/common.h>
-#include <gazebo/physics/physics.hh>
-#include <gazebo/transport/transport.hh>
+#include <gazebo/physics/Joint.hh>
+#include <gazebo/transport/Publisher.hh>
 
 namespace yarp {
     namespace dev {
@@ -50,8 +50,19 @@ namespace yarp {
         bool GazeboYarpControlBoardDriver::setReferences (const double */*refs*/) { return false; }
         bool GazeboYarpControlBoardDriver::setErrorLimit (int /*j*/, double /*limit*/) { return false; }
         bool GazeboYarpControlBoardDriver::setErrorLimits (const double */*limits*/) { return false; }
-        bool GazeboYarpControlBoardDriver::getError (int /*j*/, double */*err*/) { return false; }
-        bool GazeboYarpControlBoardDriver::getErrors (double */*errs*/) { return false; }
+
+        bool GazeboYarpControlBoardDriver::getError (int j, double *err)
+        {
+            *err=(m_positions[j]-m_zeroPosition[j])-m_motReferencePositions[j];
+            return true;
+        }
+
+        bool GazeboYarpControlBoardDriver::getErrors (double *errs)
+        {
+            for(int j=0; j< m_numberOfJoints; j++)
+                getError(j, &errs[j]);
+            return true;
+        }
 
         bool GazeboYarpControlBoardDriver::getPid (int j, Pid *pid)
         {

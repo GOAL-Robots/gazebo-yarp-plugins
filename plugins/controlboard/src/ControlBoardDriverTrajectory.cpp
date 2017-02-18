@@ -10,8 +10,8 @@
 
 #include <ControlBoardDriverTrajectory.h>
 #include <cstdio>
-#include <gazebo/physics/physics.hh>
-#include <gazebo/transport/transport.hh>
+#include <gazebo/physics/World.hh>
+#include <gazebo/physics/PhysicsEngine.hh>
 #include <gazebo/math/Angle.hh>
 
 #include <yarp/os/LogStream.h>
@@ -20,6 +20,35 @@
 using namespace yarp::os;
 using namespace yarp::sig;
 using namespace yarp::dev;
+
+void Watchdog::reset()
+{
+    m_lastUpdate=yarp::os::Time::now();
+}
+
+bool Watchdog::isExpired()
+{
+    if (m_duration<0) return false;
+    if ((yarp::os::Time::now()- m_lastUpdate) > m_duration) return true;
+    return false;
+}
+
+Watchdog::Watchdog (double expireTime)
+{
+    m_duration=expireTime;
+    m_lastUpdate=yarp::os::Time::now();
+}
+
+void Watchdog::modifyDuration(double expireTime)
+{
+     m_duration=expireTime; 
+}
+
+double Watchdog::getDuration()
+{
+     return m_duration; 
+}
+
 
 RampFilter::RampFilter()
 {
@@ -33,6 +62,15 @@ void RampFilter::setReference(double ref, double step)
     m_mutex.wait();
     m_final_reference = ref;
     m_step = step;
+    m_mutex.post();
+}
+
+void RampFilter::stop()
+{
+    m_mutex.wait();
+    m_final_reference = 0.0;
+    m_current_value = 0.0;
+    m_step = 0.0;
     m_mutex.post();
 }
 
